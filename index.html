@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Real Estate Jeopardy Game</title>
+<style>
+  :root{--blue:#0600a8;--deep:#02005f;--gold:#ffcc33;--white:#fff;--black:#050505;--green:#10b981;--red:#ef4444;}
+  *{box-sizing:border-box} body{margin:0;font-family:Arial Black,Impact,Arial,sans-serif;background:radial-gradient(circle at top,#1216c9,#020033 70%);color:white;min-height:100vh;}
+  .wrap{max-width:1200px;margin:0 auto;padding:18px}.top{display:flex;gap:14px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  h1{margin:0;font-size:clamp(28px,5vw,58px);letter-spacing:1px;text-shadow:3px 3px 0 #000;color:#fff}.sub{font-family:Arial,sans-serif;font-weight:700;color:#dbeafe;margin-top:4px}.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.select,button{border:0;border-radius:10px;padding:10px 12px;font-weight:900;cursor:pointer}.select{background:white;color:#111;max-width:100%}button{background:var(--gold);color:#111;box-shadow:0 4px 0 #a16207}button:active{transform:translateY(2px);box-shadow:0 2px 0 #a16207}.scorebar{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}.score{background:#111a;border:2px solid #60a5fa;border-radius:12px;padding:10px;text-align:center}.score .name{font-size:14px;color:#bfdbfe}.score .points{font-size:28px;color:var(--gold);text-shadow:2px 2px #000}.score .buttons{display:flex;gap:6px;justify-content:center;margin-top:8px}.score button{padding:6px 9px;border-radius:8px;font-size:12px}
+  .board{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.cat,.tile{border:3px solid #000;background:linear-gradient(#0718d9,#05008a);min-height:82px;display:flex;align-items:center;justify-content:center;text-align:center;border-radius:8px;box-shadow:inset 0 0 18px #0008,0 4px 0 #000;padding:8px}.cat{font-size:clamp(11px,1.7vw,19px);line-height:1.05;color:white;text-shadow:2px 2px #000;min-height:92px}.tile{font-size:clamp(28px,5vw,52px);color:var(--gold);text-shadow:3px 3px #000;cursor:pointer}.tile.used{background:#07104d;color:#334155;cursor:not-allowed;text-shadow:none}.tile:hover:not(.used){filter:brightness(1.25);transform:translateY(-1px)}
+  .modal{position:fixed;inset:0;background:#000d;display:none;align-items:center;justify-content:center;padding:18px;z-index:10}.modal.show{display:flex}.card{width:min(950px,96vw);min-height:60vh;background:linear-gradient(145deg,#0718d9,#02005f);border:5px solid #fff;border-radius:18px;box-shadow:0 0 40px #000;color:white;padding:24px;text-align:center;display:flex;flex-direction:column;justify-content:space-between}.meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;color:#bfdbfe;font-family:Arial,sans-serif;font-weight:900}.clue{font-size:clamp(25px,4.8vw,54px);line-height:1.15;text-shadow:3px 3px #000;margin:28px 0}.answer{display:none;background:#0007;border:2px solid #93c5fd;border-radius:14px;padding:18px;font-size:clamp(21px,3.2vw,36px);color:var(--gold);text-shadow:2px 2px #000}.answer.show{display:block}.modalbuttons{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}.modalbuttons button{font-size:16px}.close{background:#e5e7eb}.right{background:var(--green);color:#fff}.wrong{background:var(--red);color:#fff}.help{font-family:Arial,sans-serif;background:#0007;border:1px solid #60a5fa;border-radius:12px;padding:12px;margin-top:14px;color:#dbeafe;line-height:1.35}.small{font-family:Arial,sans-serif;font-size:13px;color:#bfdbfe;margin-top:10px}@media(max-width:760px){.board{gap:5px}.cat{min-height:72px}.tile{min-height:64px}.scorebar{grid-template-columns:1fr}.wrap{padding:10px}.card{padding:16px}.clue{font-size:30px}.answer{font-size:24px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div><h1>REAL ESTATE JEOPARDY</h1><div class="sub">Modern Real Estate Practice Review Game</div></div>
+    <div class="controls"><select id="roundSelect" class="select"></select><button onclick="newBoard()">Load Round</button><button onclick="resetGame()">Reset Scores</button></div>
+  </div>
+  <div class="scorebar">
+    <div class="score"><div class="name">PLAYER 1</div><div id="s0" class="points">$0</div><div class="buttons"><button onclick="adjust(0,100)">+100</button><button onclick="adjust(0,-100)">-100</button></div></div>
+    <div class="score"><div class="name">PLAYER 2</div><div id="s1" class="points">$0</div><div class="buttons"><button onclick="adjust(1,100)">+100</button><button onclick="adjust(1,-100)">-100</button></div></div>
+    <div class="score"><div class="name">PLAYER 3</div><div id="s2" class="points">$0</div><div class="buttons"><button onclick="adjust(2,100)">+100</button><button onclick="adjust(2,-100)">-100</button></div></div>
+  </div>
+  <div id="board" class="board"></div>
+  <div class="help"><b>How to play:</b> Pick a category and dollar amount. Read the clue. Player answers out loud in the form of a question. Tap “Show Answer.” Use score buttons to add/subtract points.</div>
+  <div class="small">Tip: On iPhone, open this HTML file and choose “Open in Browser” if Telegram previews it oddly.</div>
+</div>
+<div id="modal" class="modal" onclick="if(event.target.id==='modal') closeModal()">
+  <div class="card">
+    <div class="meta"><div id="mcat"></div><div id="mval"></div></div>
+    <div id="mclue" class="clue"></div>
+    <div id="mans" class="answer"></div>
+    <div class="modalbuttons"><button onclick="showAnswer()">Show Answer</button><button class="close" onclick="closeModal()">Close</button></div>
+  </div>
+</div>
+<script>
+const rounds=[
+{title:'Round 1: Property Basics', cats:['Real Estate Biz','Property Law','Ownership Rights','Forms of Ownership','Land Description'], data:[
+[['This business activity brings buyers and sellers together.','What is brokerage?'],['This career estimates property value.','What is appraisal?'],['This force can raise prices when buyers outnumber available homes.','What is demand?'],['This specialty operates rental property for an owner.','What is property management?'],['Real estate markets are mainly this because location controls value.','What are local markets?']],
+[['Land plus permanent human-made improvements.','What is real estate?'],['Movable property not permanently attached to land.','What is personal property?'],['Personal property that became real property through attachment and intent.','What is a fixture?'],['Tenant business property removable if done properly.','What is a trade fixture?'],['The ownership rights to possess, control, enjoy, exclude, and dispose.','What is the bundle of legal rights?']],
+[['The broadest and strongest form of ownership.','What is fee simple?'],['Ownership lasting for a named person’s lifetime.','What is a life estate?'],['A right to use another person’s land.','What is an easement?'],['A claim against property for debt.','What is a lien?'],['Government taking private property for public use with compensation.','What is eminent domain?']],
+[['Ownership by one person or entity.','What is severalty?'],['Co-ownership allowing unequal shares and inheritance.','What is tenancy in common?'],['Co-ownership usually involving right of survivorship.','What is joint tenancy?'],['Unit ownership plus shared common areas.','What is a condominium?'],['Residents own shares in a corporation instead of direct unit ownership.','What is a cooperative?']],
+[['A precise description identifying exact land.','What is a legal description?'],['Uses distances, directions, and monuments.','What is metes and bounds?'],['Uses baselines, meridians, townships, ranges, and sections.','What is the rectangular survey system?'],['Common subdivision description method.','What is lot and block?'],['The starting and ending point in metes and bounds.','What is the point of beginning?']]
+]},
+{title:'Round 2: Transactions', cats:['Deeds & Title','Title Records','Brokerage','Agency','Agreements'], data:[
+[['This document transfers ownership from grantor to grantee.','What is a deed?'],['The person transferring property.','Who is the grantor?'],['The deed with strongest buyer protection.','What is a general warranty deed?'],['This deed transfers whatever interest the grantor has, if any.','What is a quitclaim deed?'],['Dying without a valid will.','What is intestate?']],
+[['Placing documents in public records.','What is recording?'],['The history of property ownership transfers.','What is chain of title?'],['A possible defect or claim affecting ownership.','What is a cloud on title?'],['Protects against certain past title defects.','What is title insurance?'],['Notice created by public record availability.','What is constructive notice?']],
+[['This licensee supervises brokerage activity.','Who is the broker?'],['Compensation that is negotiable and paid by agreement.','What is commission?'],['This phrase is an antitrust red flag.','What is standard commission?'],['Competitors agreeing not to work with someone.','What is a group boycott?'],['Common tax/work status for many sales associates.','What is independent contractor?']],
+[['The represented person in an agency relationship.','Who is the principal/client?'],['Duty to put client interests first.','What is loyalty?'],['Duty to protect client secrets.','What is confidentiality?'],['One brokerage representing both sides if legal and disclosed.','What is dual agency?'],['Someone treated honestly but not represented.','Who is a customer?']],
+[['Employment contract between seller and broker.','What is a listing agreement?'],['Listing where broker earns commission if property sells during term.','What is exclusive right to sell?'],['Listing where seller can avoid commission by personally finding buyer.','What is exclusive agency?'],['Nonexclusive listing where only procuring broker gets paid.','What is an open listing?'],['Risky listing where broker keeps amount above seller’s required price.','What is a net listing?']]
+]},
+{title:'Round 3: Money, Law & Exam Traps', cats:['Contracts','Financing','Closing','Appraisal','Fair Housing'], data:[
+[['A promise or agreement the law may enforce.','What is a contract?'],['These two create mutual agreement.','What are offer and acceptance?'],['Something of legal value exchanged.','What is consideration?'],['A contract fully performed.','What is executed?'],['A condition that must be satisfied or waived.','What is a contingency?']],
+[['Borrower’s written promise to repay.','What is a promissory note?'],['Instrument securing the loan with the property.','What is a mortgage or deed of trust?'],['The cost of borrowing money.','What is interest?'],['Repayment of debt over time through scheduled payments.','What is amortization?'],['A $240,000 loan on a $300,000 property has this LTV.','What is 80%?']],
+[['Final event where ownership transfers and funds settle.','What is closing?'],['A charge on a settlement statement.','What is a debit?'],['An amount in favor of a party.','What is a credit?'],['Dividing expenses based on time owned or occupied.','What is proration?'],['Unpaid seller taxes are usually this to seller and this to buyer.','What are seller debit and buyer credit?']],
+[['An opinion or estimate of value.','What is an appraisal?'],['Most common approach for single-family homes.','What is sales comparison?'],['Best approach for income-producing property.','What is the income approach?'],['Useful for new or special-purpose buildings.','What is the cost approach?'],['Principle that buyer won’t pay more than comparable substitute cost.','What is substitution?']],
+[['Federal law area prohibiting housing discrimination.','What is fair housing?'],['Directing buyers based on protected class.','What is steering?'],['Discriminatory lending/service restriction by area.','What is redlining?'],['Protected class for households with children under 18.','What is familial status?'],['Rule exception needed for disability-related use/enjoyment.','What is reasonable accommodation?']]
+]},
+{title:'Round 4: Property Management, Leases, Land Use, Environmental', cats:['Leases','Taxes & Liens','Property Mgmt','Land Use','Environmental'], data:[
+[['Agreement giving possession and use, not ownership.','What is a lease?'],['Landlord or owner granting lease rights.','Who is the lessor?'],['Leasehold with a definite ending date.','What is estate for years?'],['Rent plus a percentage of business sales.','What is a percentage lease?'],['Transfer of all remaining lease rights.','What is assignment?']],
+[['Claim against property as security for debt.','What is a lien?'],['Lien created by agreement, like a mortgage.','What is voluntary lien?'],['Lien created by law, like taxes.','What is involuntary lien?'],['Lien for unpaid contractor work.','What is a mechanic’s lien?'],['Tax rate commonly expressed in mills.','What is millage rate?']],
+[['Operating property for an owner.','What is property management?'],['Agreement defining manager authority and pay.','What is a management agreement?'],['List of units, tenants, rents, and lease details.','What is a rent roll?'],['Maintenance done before equipment fails.','What is preventive maintenance?'],['Account holding client/tenant funds separately.','What is a trust account?']],
+[['Government regulation of land use.','What is zoning?'],['Long-term plan guiding community growth.','What is a master plan?'],['Zoning exception due to hardship.','What is a variance?'],['Use legal before zoning changed.','What is legal nonconforming use?'],['Private rules limiting property use.','What are deed restrictions/covenants?']],
+[['Agency associated with environmental protection.','What is the EPA?'],['Hazard common in pre-1978 homes.','What is lead-based paint?'],['Naturally occurring gas entering from ground.','What is radon?'],['Commercial environmental due diligence review.','What is a Phase I environmental site assessment?'],['Federal hazardous waste cleanup law.','What is CERCLA/Superfund?']]
+]}
+];
+let scores=[0,0,0], current=null, used={};
+const vals=[100,200,300,400,500];
+const board=document.getElementById('board'), select=document.getElementById('roundSelect');
+rounds.forEach((r,i)=>{let o=document.createElement('option');o.value=i;o.textContent=r.title;select.appendChild(o)});
+function money(n){return (n<0?'-$':'$')+Math.abs(n)}
+function renderScores(){scores.forEach((s,i)=>document.getElementById('s'+i).textContent=money(s))}
+function adjust(i,amt){scores[i]+=amt;renderScores()}
+function newBoard(){const ri=+select.value, r=rounds[ri];board.innerHTML='';r.cats.forEach(c=>{let d=document.createElement('div');d.className='cat';d.textContent=c;board.appendChild(d)});for(let row=0;row<5;row++){for(let col=0;col<5;col++){let key=`${ri}-${col}-${row}`;let t=document.createElement('div');t.className='tile'+(used[key]?' used':'');t.textContent=used[key]?'':money(vals[row]);t.onclick=()=>openClue(ri,col,row,t,key);board.appendChild(t)}}}
+function openClue(ri,col,row,t,key){if(used[key])return;used[key]=true;t.classList.add('used');t.textContent='';const r=rounds[ri];current={ri,col,row,val:vals[row],key};document.getElementById('mcat').textContent=r.cats[col];document.getElementById('mval').textContent=money(vals[row]);document.getElementById('mclue').textContent=r.data[col][row][0];document.getElementById('mans').textContent=r.data[col][row][1];document.getElementById('mans').classList.remove('show');document.getElementById('modal').classList.add('show')}
+function showAnswer(){document.getElementById('mans').classList.add('show')}
+function closeModal(){document.getElementById('modal').classList.remove('show')}
+function resetGame(){scores=[0,0,0];used={};renderScores();newBoard()}
+renderScores();newBoard();
+</script>
+</body>
+</html>
